@@ -167,10 +167,12 @@ struct LiveFeedView: View {
     private func impactRow(_ impact: PlayImpact, game: CachedFeedGame) -> some View {
         let ownershipKey = SharedFeedClient.ownershipKey(impact, game: game, context: payload?.scoring)
         let owner = payload?.scoring?.ownership[ownershipKey]
+        let position = payload?.scoring?.positions?[ownershipKey] ?? payload?.scoring?.positions?[impact.id]
         return VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(impact.name).font(.subheadline.weight(.semibold))
+                    Text(impact.name + (position.map { " - " + $0 } ?? ""))
+                        .font(.subheadline.weight(.semibold))
                     if let owner {
                         Text(owner.team_name + " · " + owner.owner_name)
                             .font(.caption).foregroundStyle(.secondary)
