@@ -12,14 +12,21 @@ Only the selected game is polled, without overlapping requests. Leaving the tab 
 
 10-second polling is approximately 360 box-score requests per hour, plus manual refreshes and game discovery. Check your RapidAPI quota before enabling it. Polling does not guarantee Tank01 publishes new data every 10 seconds.
 
-This first integration displays provider play-by-play and player box scores. It does not yet attribute fantasy points to individual plays or map Tank01 player IDs to Sleeper owners. Tank01 fantasy scoring defaults may differ from the league settings.
+The Game activity section reads Tank01 allPlayByPlay entries, resolves player names from the response, and calculates per-play fantasy changes using PNW 2026 scoring loaded from Sleeper. Provider-calculated fantasyPoints totals are not used for attribution. Each refresh replaces the snapshot and marks new or updated rows; it never adds a refreshed play to a running total. Historical plays appear on the first refresh.
+
+Supported scoring includes common passing, rushing, receiving, kicking, two-point, and supplied fumble stats. Provider omissions remain incomplete; D/ST team scoring and threshold bonuses are not included. Player names are resolved within Tank01; Sleeper ownership mapping is not yet connected to this tab.
 
 Verification without credentials:
 
     xcrun swiftc ios/Duo/Tank01Client.swift ios/Tests/Tank01ClientChecks.swift -o /tmp/duo-tank01-checks
     /tmp/duo-tank01-checks
 
-The checks use synthetic fixtures, not a recorded Tank01 response. Authenticated live behavior must be checked after entering a key in the app.
+The client checks above use synthetic schema fixtures. Per-play scoring is additionally checked against a small recorded public-game Tank01 response (CAR at WSH, 2024-10-20), stored without headers or credentials:
+
+    xcrun swiftc ios/Duo/Tank01Client.swift ios/Duo/PlayFeed.swift ios/Tests/PlayFeedChecks.swift -o /tmp/duo-play-checks
+    /tmp/duo-play-checks ios/Tests/Fixtures/tank01-plays.json
+
+Live polling still requires an API key entered in the app.
 
 ## Simulator Keychain builds
 
