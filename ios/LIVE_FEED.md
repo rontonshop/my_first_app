@@ -13,7 +13,7 @@ For cloud hosting, see backend/README.md and render.yaml. Set the hosted HTTPS o
 - One combined stream of all collected games, with the latest game/score above the event quarter/clock.
 - Latest score labels distinguish the current scoreboard from the historical play clock.
 - Names and point changes come from Tank01's allPlayByPlay.playerStats fields, using PNW 2026 league scoring loaded by the backend.
-- Current player totals are calculated from cumulative box-score stats using the league rules. Individual play gains/losses remain derived from per-play stats. This prevents omitted play stats from understating the current total. When a complete aggregate score cannot be calculated (for example, missing kicking distance bands), the app explicitly labels the running sum as Feed total. Repeated reads and corrected plays do not double-count points.
+- Player totals come directly from Sleeper weekly matchup scores. Individual play gains/losses are calculated estimates from Tank01. Missing Sleeper scores remain unavailable; no calculated total is substituted. Repeated reads and corrected plays do not double-count events.
 - Current fantasy team + owner/co-owners appear when mapped. Starters show running game total plus the play delta (green gains/red losses). Bench players show only their running total. Unmapped players are labeled explicitly rather than assigned a guessed owner.
 - Backend sequence IDs merge games by when plays were first received. The app displays the 300 most recently received events.
 - Per-play omissions, D/ST team scoring, and threshold bonuses remain limitations.
@@ -27,3 +27,7 @@ For cloud hosting, see backend/README.md and render.yaml. Set the hosted HTTPS o
 Keep simulator code signing enabled. The preserved diagnostic flag --keychain-self-check tests only a dummy Keychain item; the new feed no longer requires device provider credentials.
 
 The current comparison build defaults to one-second refreshes. Backend POLL_SECONDS can override the interval (minimum one second); the app follows refresh_seconds returned by the server. Provider publication delays and slow requests still limit update speed.
+
+## Direct Sleeper totals
+
+The collector now reads league matchups for the current Sleeper week and publishes players_points values unchanged in sleeper_points. Scores refresh centrally at the active polling interval while games are active, and once a minute otherwise. Zero/negative values and bench scores are preserved; missing players remain unavailable. The app verifies week and NFL season before showing a Sleeper total. It does not substitute calculated box-score totals. Per-play Tank01 changes remain explicitly labeled estimates. The score refresh timestamp is visible in the feed.
