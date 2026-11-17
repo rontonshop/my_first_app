@@ -79,7 +79,11 @@ struct LiveFeedView: View {
                     Section {
                         Text("\(league.league_name) scoring · Current roster ownership · Newest received plays first")
                             .font(.caption).foregroundStyle(.secondary)
-                        Text("Current totals use cumulative box-score stats, independently of each play’s gain or loss. Feed totals are used when a complete current score cannot be calculated. Missing play stats, D/ST scoring, and unsupported bonuses may cause differences from Sleeper.")
+                        if let updated = league.scores_updated_at {
+                            Text("Sleeper scores updated " + Date(timeIntervalSince1970: updated).formatted(date: .omitted, time: .standard))
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Text("Totals come directly from Sleeper’s weekly league matchups. Per-play changes are estimates calculated from Tank01 stats. Players without a returned Sleeper score show Total unavailable.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -170,7 +174,7 @@ struct LiveFeedView: View {
         let ownershipKey = SharedFeedClient.ownershipKey(impact, game: game, context: payload?.scoring)
         let owner = payload?.scoring?.ownership[ownershipKey]
         let position = payload?.scoring?.positions?[ownershipKey] ?? payload?.scoring?.positions?[impact.id]
-        let currentTotal = PlayFeed.currentTotal(playerID: impact.id, snapshot: game.snapshot, scoring: payload?.scoring?.settings ?? [:])
+        let currentTotal = SharedFeedClient.sleeperTotal(impact, game: game, context: payload?.scoring)
         return VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -188,10 +192,10 @@ struct LiveFeedView: View {
                 }
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text((currentTotal == nil ? "Feed total " : "Current total ") + (currentTotal ?? impact.totalAfterPlay).formatted(.number.precision(.fractionLength(2))))
+                    Text(currentTotal.map { "Sleeper total " + $0.formatted(.number.precision(.fractionLength(2))) } ?? "Total unavailable")
                         .font(.headline).monospacedDigit()
                     if owner?.starter != false {
-                        Text(signedPoints(impact.points)).font(.subheadline.bold()).monospacedDigit()
+                        Text(signedPoints(impact.points) + " this play (est.)").font(.subheadline.bold()).monospacedDigit()
                             .foregroundStyle(impact.points < 0 ? .red : impact.points > 0 ? .green : .secondary)
                     }
                 }
