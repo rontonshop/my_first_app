@@ -4,13 +4,13 @@
 2. Subscribe to Tank01 NFL on RapidAPI if necessary. In its playground, copy the X-RapidAPI-Key header value.
 3. Paste the key into the app's secure field and tap Save key on this device. Do not put the key in source code, GitHub, or chat. The app stores it in Keychain on that device.
 4. Choose a date and Find games for date, or paste a gameID from the playground (YYYYMMDD_AWAY@HOME).
-5. Tap Refresh once to verify access, then enable Refresh every 10 seconds.
+5. Tap Refresh once to verify access, then enable Refresh every 5 seconds.
 
 The client sends X-RapidAPI-Key and X-RapidAPI-Host headers to Tank01's RapidAPI host. Box score requests use playByPlay=true and fantasyPoints=true. Game discovery uses getNFLGamesForDate.
 
 Only the selected game is polled, without overlapping requests. Leaving the tab or backgrounding the app pauses polling. Errors stop auto-refresh. Each poll replaces the previous snapshot, so corrected plays do not accumulate duplicates. The response inspector preserves provider fields when their detailed schema differs from the initial adapter.
 
-10-second polling is approximately 360 box-score requests per hour, plus manual refreshes and game discovery. Check your RapidAPI quota before enabling it. Polling does not guarantee Tank01 publishes new data every 10 seconds.
+5-second polling is approximately 720 box-score requests per hour, plus manual refreshes and game discovery. Check your RapidAPI quota before enabling it. Polling does not guarantee Tank01 publishes new data every 5 seconds.
 
 The Game activity section reads Tank01 allPlayByPlay entries, resolves player names from the response, and calculates per-play fantasy changes using PNW 2026 scoring loaded from Sleeper. Provider-calculated fantasyPoints totals are not used for attribution. Each refresh replaces the snapshot and marks new or updated rows; it never adds a refreshed play to a running total. Historical plays appear on the first refresh.
 
@@ -37,3 +37,5 @@ Keep code signing enabled. Simulator.entitlements supplies a simulator-only app 
 Do not use CODE_SIGNING_ALLOWED=NO: that bypasses the simulator entitlement setup and causes Keychain error -34018.
 
 For a Debug simulator build, launch with --keychain-self-check to verify dummy-item creation, update, readback, and deletion. This uses a separate temporary account and never touches the real API key or calls Tank01.
+
+Game Center shows the latest game score and status. Each play header repeats the latest score above its historical quarter and clock, explicitly labeled Latest score; this is not a reconstructed historical score.
