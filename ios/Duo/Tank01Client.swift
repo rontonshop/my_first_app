@@ -52,7 +52,7 @@ struct FeedSnapshot {
     let body: FeedJSON
     let raw: String
     var plays: [(String, FeedJSON)] {
-        guard let value = body["playByPlay"] else { return [] }
+        guard let value = body["allPlayByPlay"] ?? body["playByPlay"] else { return [] }
         return value.records
     }
     var playerStats: [(String, FeedJSON)] { body["playerStats"]?.records ?? [] }
