@@ -99,9 +99,25 @@ class Provider:
         league = self.sleeper('league/' + LEAGUE_ID)
         users = self.sleeper('league/' + LEAGUE_ID + '/users')
         rosters = self.sleeper('league/' + LEAGUE_ID + '/rosters')
-        return {'league_name': league['name'], 'settings': league['scoring_settings'],
+        week = int((league.get('settings') or {}).get('leg') or self.sleeper('state/nfl')['display_week'])
+        return {'league_name': league['name'], 'settings': league['scoring_settings'], 'week': week, 'season': str(league['season']),
                 'ownership': ownership_map(users, rosters, player_index),
                 'known_player_ids': list(player_index), 'positions': catalog.get('positions', {}), 'updated_at': time.time()}
+
+    def matchup_points(self, week):
+        return self.sleeper('league/' + LEAGUE_ID + '/matchups/' + str(week))
+
+
+def sleeper_point_map(matchups, player_index):
+    points = {}
+    for matchup in matchups:
+        for player, value in (matchup.get('players_points') or {}).items():
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                points[player] = value
+        for player, value in zip(matchup.get('starters') or [], matchup.get('starters_points') or []):
+            if player not in points and isinstance(value, (int, float)) and not isinstance(value, bool):
+                points[player] = value
+    return {provider_id: points[sleeper_id] for provider_id, sleeper_id in player_index.items() if sleeper_id in points}
 
 
 def name_key(name, team):
@@ -261,6 +277,10 @@ class Store:
             db.execute('UPDATE games SET failures=?,next_poll=? WHERE id=?',
                        (failures, now + min(300, 5 * 2 ** min(failures, 6)), game_id))
 
+    def has_active_games(self):
+        with self.connect() as db:
+            return db.execute("SELECT 1 FROM games WHERE status='1' AND finalized=0 LIMIT 1").fetchone() is not None
+
     def feed(self, now=None):
         now = time.time() if now is None else now
         with self.connect() as db:
@@ -282,6 +302,7 @@ class Collector:
         self.owner = str(uuid.uuid4())
         self.next_discovery = 0
         self.next_scoring = 0
+        self.next_scores = 0
         self.pause_until = 0
         self.stop = threading.Event()
         self.error = None
@@ -291,6 +312,10 @@ class Collector:
         if not self.store.lease(self.owner, now):
             return
         if now < self.pause_until:
+            if now >= self.next_scores:
+                self.refresh_scores(now)
+            self.store.meta('collector', {'last_tick': self.clock(), 'error': self.error,
+                                         'paused_until': self.pause_until, 'provider_requests': self.provider.calls})
             return
         self.error = None
         if now >= self.next_scoring:
@@ -299,7 +324,13 @@ class Collector:
                 if not index or index.get('version') != 3 or now - index['updated_at'] >= 86400:
                     index = {'version': 3, 'updated_at': now, **self.provider.player_index()}
                     self.store.meta('player_index', index)
-                self.store.meta('scoring', self.provider.scoring(index))
+                context = self.provider.scoring(index)
+                previous = self.store.meta('scoring') or {}
+                if previous.get('week') == context.get('week') and previous.get('season') == context.get('season'):
+                    for field in ('sleeper_points', 'scores_updated_at'):
+                        if field in previous:
+                            context[field] = previous[field]
+                self.store.meta('scoring', context)
                 self.next_scoring = now + 60
             except (ProviderError, subprocess.TimeoutExpired):
                 self.next_scoring = now + 60
@@ -318,8 +349,28 @@ class Collector:
             # Bounded parallel requests keep one slow game from delaying every other game.
             with ThreadPoolExecutor(max_workers=8) as pool:
                 list(pool.map(self.poll_game, self.store.candidates(now)))
+        if now >= self.next_scores:
+            self.refresh_scores(now)
         self.store.meta('collector', {'last_tick': self.clock(), 'error': self.error,
                                      'paused_until': self.pause_until, 'provider_requests': self.provider.calls})
+
+    def refresh_scores(self, now):
+        context = self.store.meta('scoring')
+        index = self.store.meta('player_index')
+        if not context or not context.get('week') or not index:
+            self.next_scores = now + 10
+            return
+        try:
+            matchups = self.provider.matchup_points(context['week'])
+            if not isinstance(matchups, list):
+                raise ProviderError()
+            context['sleeper_points'] = sleeper_point_map(matchups, index['players'])
+            context['scores_updated_at'] = self.clock()
+            self.store.meta('scoring', context)
+            self.next_scores = now + (POLL_SECONDS if self.store.has_active_games() else 60)
+        except (ProviderError, subprocess.TimeoutExpired):
+            self.next_scores = now + 10
+            self.error = 'Sleeper scores could not be refreshed; showing last saved scores.'
 
     def handle_error(self, error, now):
         status = getattr(error, 'status', 502)
