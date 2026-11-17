@@ -3,6 +3,7 @@ import Darwin
 
 @main
 struct DuoApp: App {
+    @AppStorage("selectedTab") private var selectedTab = "live"
     init() {
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--keychain-self-check") {
@@ -18,13 +19,16 @@ struct DuoApp: App {
     }
     var body: some Scene {
         WindowGroup {
-            TabView {
+            TabView(selection: $selectedTab) {
                 LeagueView()
                     .tabItem { Label("Sleeper", systemImage: "sportscourt") }
+                    .tag("sleeper")
                 LiveFeedView()
                     .tabItem { Label("Live Feed", systemImage: "dot.radiowaves.left.and.right") }
+                    .tag("live")
                 ContentView()
                     .tabItem { Label("Buttons", systemImage: "circle.grid.2x1") }
+                    .tag("buttons")
             }
             .preferredColorScheme(.dark)
         }
