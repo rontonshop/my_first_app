@@ -60,3 +60,7 @@ Official references:
 Checks use a fake provider and temporary SQLite databases. They verify shared reads do not consume Tank01 calls, active-only polling, stale schedule fallback, finals, lease ownership, retries, persistence, corrected/deleted play identities, and starter/bench/co-owner mapping.
 
 The current comparison build defaults to one-second refreshes. Backend POLL_SECONDS can override the interval (minimum one second); the app follows refresh_seconds returned by the server. Provider publication delays and slow requests still limit update speed.
+
+## Direct Sleeper totals
+
+The collector now reads league matchups for the current Sleeper week and publishes players_points values unchanged in sleeper_points. Scores refresh centrally at the active polling interval while games are active, and once a minute otherwise. Zero/negative values and bench scores are preserved; missing players remain unavailable. The app verifies week and NFL season before showing a Sleeper total. It does not substitute calculated box-score totals. Per-play Tank01 changes remain explicitly labeled estimates. The score refresh timestamp is visible in the feed.
