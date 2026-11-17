@@ -20,3 +20,13 @@ Verification without credentials:
     /tmp/duo-tank01-checks
 
 The checks use synthetic fixtures, not a recorded Tank01 response. Authenticated live behavior must be checked after entering a key in the app.
+
+## Simulator Keychain builds
+
+Keep code signing enabled. Simulator.entitlements supplies a simulator-only app identity and Keychain access group; physical-device builds use Xcode's normal development signing.
+
+    xcodebuild -project ios/Duo.xcodeproj -scheme Duo -configuration Debug -sdk iphonesimulator -derivedDataPath .build CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build
+
+Do not use CODE_SIGNING_ALLOWED=NO: that bypasses the simulator entitlement setup and causes Keychain error -34018.
+
+For a Debug simulator build, launch with --keychain-self-check to verify dummy-item creation, update, readback, and deletion. This uses a separate temporary account and never touches the real API key or calls Tank01.
