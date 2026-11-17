@@ -15,6 +15,8 @@ struct LiveFeedView: View {
     @State private var settingsOpen = false
     @State private var draftURL = ""
 
+    private var refreshInterval: Double { min(60, max(1, payload?.refresh_seconds ?? 1)) }
+
     private var reading: Bool { visible && scenePhase == .active && !settingsOpen }
 
     var body: some View {
@@ -26,7 +28,7 @@ struct LiveFeedView: View {
                             .font(.caption.weight(.heavy)).tracking(2).foregroundStyle(.cyan)
                         Text("Every game. One feed.").font(.title2.bold())
                         let count = payload?.games.filter(\.active).count ?? 0
-                        Text("\(count) active \(count == 1 ? "game" : "games") · Updates every 5 seconds")
+                        Text("\(count) active \(count == 1 ? "game" : "games") · Updates every \(Int(refreshInterval)) \(refreshInterval == 1 ? "second" : "seconds")")
                             .font(.subheadline).foregroundStyle(.secondary)
                         if let lastRead {
                             Text("Feed checked " + lastRead.formatted(date: .omitted, time: .standard))
@@ -121,7 +123,7 @@ struct LiveFeedView: View {
                     let started = Date()
                     await refresh()
                     guard !Task.isCancelled else { break }
-                    do { try await Task.sleep(for: .seconds(max(0.1, 5 - Date().timeIntervalSince(started)))) }
+                    do { try await Task.sleep(for: .seconds(max(0.1, refreshInterval - Date().timeIntervalSince(started)))) }
                     catch { break }
                 }
             }
