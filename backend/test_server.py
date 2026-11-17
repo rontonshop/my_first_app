@@ -28,10 +28,11 @@ class FakeProvider:
             {'play': 'First play', 'playerStats': {}}, {'play': 'Second play', 'playerStats': {}}]}
 
     def player_index(self):
-        return {'123': 's1'}
+        return {'players': {'123': 's1'}, 'positions': {'123': 'RB'}}
 
-    def scoring(self, player_index):
-        return {'league_name': 'Test League', 'settings': {'rec': 1}, 'ownership': {}, 'known_player_ids': list(player_index)}
+    def scoring(self, catalog):
+        return {'league_name': 'Test League', 'settings': {'rec': 1}, 'ownership': {},
+                'known_player_ids': list(catalog['players']), 'positions': catalog['positions']}
 
     def fetch(self, endpoint, **params):
         self.calls += 1
