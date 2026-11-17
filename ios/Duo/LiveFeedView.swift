@@ -104,8 +104,13 @@ struct LiveFeedView: View {
                                         HStack {
                                             Text(impact.name).font(.subheadline.weight(.semibold))
                                             Spacer()
-                                            Text(signedPoints(impact.points)).font(.headline).monospacedDigit()
-                                                .foregroundStyle(impact.points < 0 ? .red : .green)
+                                            VStack(alignment: .trailing, spacing: 4) {
+                                                Text(signedPoints(impact.points)).font(.headline).monospacedDigit()
+                                                    .foregroundStyle(impact.points < 0 ? .red : .green)
+                                                Text("Total " + impact.totalAfterPlay.formatted(.number.precision(.fractionLength(2))))
+                                                    .font(.caption.weight(.semibold)).monospacedDigit()
+                                                    .accessibilityLabel("Player game total after this play: " + impact.totalAfterPlay.formatted())
+                                            }
                                         }
                                         Text(impact.explanation).font(.caption).foregroundStyle(.secondary)
                                     }
@@ -118,7 +123,7 @@ struct LiveFeedView: View {
                         }
                     }
                     Section {
-                        Text("Points are calculated from Tank01’s per-play player stats using your league’s scoring. Provider omissions may leave plays incomplete. D/ST team scoring and threshold bonuses are not included. Refresh replaces revised plays rather than adding their points twice.")
+                        Text("Each player’s total is their running game score after that play, summed from the available feed using your league’s scoring. Provider omissions, D/ST team scoring, and unsupported bonuses can cause differences from Sleeper totals. Refresh recomputes totals when plays change.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
