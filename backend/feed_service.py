@@ -90,15 +90,18 @@ class Provider:
             if key:
                 names.setdefault(key, set()).add(sleeper_id)
         index.update({key: next(iter(ids)) for key, ids in names.items() if len(ids) == 1})
-        return index
+        positions = {key: directory[sleeper_id]['position'] for key, sleeper_id in index.items()
+                     if directory[sleeper_id].get('position')}
+        return {'players': index, 'positions': positions}
 
-    def scoring(self, player_index):
+    def scoring(self, catalog):
+        player_index = catalog['players']
         league = self.sleeper('league/' + LEAGUE_ID)
         users = self.sleeper('league/' + LEAGUE_ID + '/users')
         rosters = self.sleeper('league/' + LEAGUE_ID + '/rosters')
         return {'league_name': league['name'], 'settings': league['scoring_settings'],
                 'ownership': ownership_map(users, rosters, player_index),
-                'known_player_ids': list(player_index), 'updated_at': time.time()}
+                'known_player_ids': list(player_index), 'positions': catalog.get('positions', {}), 'updated_at': time.time()}
 
 
 def name_key(name, team):
@@ -293,10 +296,10 @@ class Collector:
         if now >= self.next_scoring:
             try:
                 index = self.store.meta('player_index')
-                if not index or index.get('version') != 2 or now - index['updated_at'] >= 86400:
-                    index = {'version': 2, 'updated_at': now, 'players': self.provider.player_index()}
+                if not index or index.get('version') != 3 or now - index['updated_at'] >= 86400:
+                    index = {'version': 3, 'updated_at': now, **self.provider.player_index()}
                     self.store.meta('player_index', index)
-                self.store.meta('scoring', self.provider.scoring(index['players']))
+                self.store.meta('scoring', self.provider.scoring(index))
                 self.next_scoring = now + 60
             except (ProviderError, subprocess.TimeoutExpired):
                 self.next_scoring = now + 60
