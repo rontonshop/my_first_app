@@ -1,7 +1,21 @@
 import SwiftUI
+import Darwin
 
 @main
 struct DuoApp: App {
+    init() {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--keychain-self-check") {
+            do {
+                try TankKeychain.selfCheck()
+                print("KEYCHAIN_SELF_CHECK_PASS: add, update, read, delete")
+            } catch {
+                print("KEYCHAIN_SELF_CHECK_FAIL: " + error.localizedDescription)
+            }
+            fflush(stdout)
+        }
+        #endif
+    }
     var body: some Scene {
         WindowGroup {
             TabView {
