@@ -1,0 +1,3 @@
+Hello, Ronald!
+
+Welcome to my_first_app. This file was added with Codex through your GitHub connection.
