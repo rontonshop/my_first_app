@@ -142,9 +142,7 @@ struct LeagueView: View {
                 ForEach(weeklyPairs) { pair in
                     Section {
                         DisclosureGroup(isExpanded: expansion(for: pair.id)) {
-                            ForEach(pair.teams, id: \.roster_id) { team in
-                                teamLineup(team)
-                            }
+                            matchupLineup(pair)
                         } label: {
                             HStack(alignment: .top, spacing: 12) {
                                 summary(pair.teams[0])
@@ -211,40 +209,44 @@ struct LeagueView: View {
             }
         }.frame(maxWidth: .infinity)
     }
-    private func teamLineup(_ team: SleeperMatchup) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private func matchupLineup(_ pair: WeeklyPair) -> some View {
+        let left = pair.teams[0]
+        let right = pair.teams.count > 1 ? pair.teams[1] : nil
+        let leftBench = left.players.filter { !left.starters.contains($0) }
+        let rightBench = right.map { team in team.players.filter { !team.starters.contains($0) } } ?? []
+        return VStack(alignment: .leading, spacing: 12) {
             Divider()
-            HStack {
-                Text(teamName(team.roster_id)).font(.headline)
-                Spacer()
-                Text(score(team.custom_points ?? team.points)).font(.headline).monospacedDigit()
-            }
-            Text(ownerNames(team.roster_id)).font(.caption).foregroundStyle(.secondary)
-            if let opponent = matchups.first(where: {
-                team.matchup_id != nil && $0.matchup_id == team.matchup_id && $0.roster_id != team.roster_id
-            }) {
-                Text("Week \(week) vs \(teamName(opponent.roster_id))")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            if team.custom_points != nil {
-                Text("Total includes commissioner adjustment").font(.caption).foregroundStyle(.secondary)
-            }
             Text("STARTERS").font(.caption.bold()).foregroundStyle(.secondary)
             ForEach(Array(startingSlots.enumerated()), id: \.offset) { index, slot in
-                let id = index < team.starters.count ? team.starters[index] : "0"
-                if id == "0" || matches(id) {
-                    playerRow(id: id, slot: slot, matchup: team, starterIndex: index)
+                let leftID = index < left.starters.count ? left.starters[index] : "0"
+                let rightID = right.flatMap { index < $0.starters.count ? $0.starters[index] : nil } ?? "0"
+                if search.isEmpty || matches(leftID) || matches(rightID) {
+                    comparisonRow(leftID: leftID, rightID: rightID, slot: slot, left: left, right: right, index: index)
                     Divider()
                 }
             }
             Text("BENCH").font(.caption.bold()).foregroundStyle(.secondary)
-            let bench = team.players.filter { !team.starters.contains($0) && matches($0) }
-            ForEach(bench, id: \.self) { id in
-                playerRow(id: id, slot: "BN", matchup: team)
-                Divider()
+            ForEach(0..<max(leftBench.count, rightBench.count), id: \.self) { index in
+                let leftID = index < leftBench.count ? leftBench[index] : "0"
+                let rightID = index < rightBench.count ? rightBench[index] : "0"
+                if search.isEmpty || matches(leftID) || matches(rightID) {
+                    comparisonRow(leftID: leftID, rightID: rightID, slot: "BN", left: left, right: right, index: nil)
+                    Divider()
+                }
             }
-            if bench.isEmpty { Text("No bench players").font(.caption).foregroundStyle(.secondary) }
+            Text("Bench rows are paired for display only; bench points do not count toward totals.")
+                .font(.caption).foregroundStyle(.secondary)
         }.padding(.vertical, 12)
+    }
+    private func comparisonRow(leftID: String, rightID: String, slot: String, left: SleeperMatchup, right: SleeperMatchup?, index: Int?) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            playerCell(id: leftID, matchup: left, starterIndex: index)
+            VStack(spacing: 4) {
+                Text(slot).font(.caption2.bold())
+                Text("vs").font(.caption2)
+            }.foregroundStyle(.secondary).frame(width: 48).padding(.top, 4)
+            playerCell(id: rightID, matchup: right, starterIndex: index)
+        }.padding(.vertical, 5)
     }
     private var startingSlots: [String] {
         let slots = leagues.first { $0.id == selectedLeague }?.roster_positions.filter { $0 != "BN" } ?? []
@@ -257,30 +259,24 @@ struct LeagueView: View {
     private func score(_ value: Double) -> String {
         value.formatted(.number.precision(.fractionLength(2)))
     }
-    private func playerRow(id: String, slot: String, matchup: SleeperMatchup, starterIndex: Int? = nil) -> some View {
+    private func playerCell(id: String, matchup: SleeperMatchup?, starterIndex: Int?) -> some View {
         let empty = id == "0"
         let points: Double? = {
             if empty { return nil }
-            if let index = starterIndex, let values = matchup.starters_points, index < values.count {
+            if let index = starterIndex, let values = matchup?.starters_points, index < values.count {
                 return values[index]
             }
-            return matchup.players_points?[id]
+            return matchup?.players_points?[id]
         }()
-        return HStack(spacing: 12) {
-            Text(slot).font(.caption.weight(.bold)).foregroundStyle(.secondary)
-                .frame(width: 62, alignment: .leading)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(empty ? "Empty slot" : (players[id]?.name(fallback: id) ?? id))
-                if !empty {
-                    // Player directory team is current; it is not used as historical opponent data.
-                    Text(players[id]?.position ?? "")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
+        return VStack(alignment: .leading, spacing: 5) {
+            Text(empty ? "—" : (players[id]?.name(fallback: id) ?? id))
+                .font(.subheadline.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+            if !empty {
+                Text(players[id]?.position ?? "").font(.caption).foregroundStyle(.secondary)
             }
-            Spacer()
-            Text(points.map(score) ?? "—").font(.body.weight(.semibold)).monospacedDigit()
+            Text(points.map(score) ?? "—").font(.headline).monospacedDigit()
                 .accessibilityLabel(points.map { score($0) + " fantasy points" } ?? "Points unavailable")
-        }.padding(.vertical, 4)
+        }.frame(maxWidth: .infinity, alignment: .leading)
     }
     private func isMine(_ rosterID: Int) -> Bool {
         guard let roster = rosters.first(where: { $0.id == rosterID }) else { return false }
