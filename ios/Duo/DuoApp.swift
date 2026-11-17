@@ -7,6 +7,8 @@ struct DuoApp: App {
             TabView {
                 LeagueView()
                     .tabItem { Label("Sleeper", systemImage: "sportscourt") }
+                LiveFeedView()
+                    .tabItem { Label("Live Feed", systemImage: "dot.radiowaves.left.and.right") }
                 ContentView()
                     .tabItem { Label("Buttons", systemImage: "circle.grid.2x1") }
             }
