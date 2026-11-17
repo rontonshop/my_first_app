@@ -13,7 +13,7 @@ For cloud hosting, see backend/README.md and render.yaml. Set the hosted HTTPS o
 - One combined stream of all collected games, with the latest game/score above the event quarter/clock.
 - Latest score labels distinguish the current scoreboard from the historical play clock.
 - Names and point changes come from Tank01's allPlayByPlay.playerStats fields, using PNW 2026 league scoring loaded by the backend.
-- Player totals are recomputed chronologically from each full game snapshot. Repeated reads and corrected plays do not double-count points.
+- Current player totals are calculated from cumulative box-score stats using the league rules. Individual play gains/losses remain derived from per-play stats. This prevents omitted play stats from understating the current total. When a complete aggregate score cannot be calculated (for example, missing kicking distance bands), the app explicitly labels the running sum as Feed total. Repeated reads and corrected plays do not double-count points.
 - Current fantasy team + owner/co-owners appear when mapped. Starters show running game total plus the play delta (green gains/red losses). Bench players show only their running total. Unmapped players are labeled explicitly rather than assigned a guessed owner.
 - Backend sequence IDs merge games by when plays were first received. The app displays the 300 most recently received events.
 - Per-play omissions, D/ST team scoring, and threshold bonuses remain limitations.
