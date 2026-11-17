@@ -79,7 +79,7 @@ struct LiveFeedView: View {
                     Section {
                         Text("\(league.league_name) scoring · Current roster ownership · Newest received plays first")
                             .font(.caption).foregroundStyle(.secondary)
-                        Text("Totals are running game points from available play stats. Provider omissions, D/ST scoring, and unsupported bonuses may cause differences from Sleeper.")
+                        Text("Current totals use cumulative box-score stats, independently of each play’s gain or loss. Feed totals are used when a complete current score cannot be calculated. Missing play stats, D/ST scoring, and unsupported bonuses may cause differences from Sleeper.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -170,6 +170,7 @@ struct LiveFeedView: View {
         let ownershipKey = SharedFeedClient.ownershipKey(impact, game: game, context: payload?.scoring)
         let owner = payload?.scoring?.ownership[ownershipKey]
         let position = payload?.scoring?.positions?[ownershipKey] ?? payload?.scoring?.positions?[impact.id]
+        let currentTotal = PlayFeed.currentTotal(playerID: impact.id, snapshot: game.snapshot, scoring: payload?.scoring?.settings ?? [:])
         return VStack(alignment: .leading, spacing: 5) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -187,7 +188,7 @@ struct LiveFeedView: View {
                 }
                 Spacer(minLength: 0)
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("Total " + impact.totalAfterPlay.formatted(.number.precision(.fractionLength(2))))
+                    Text((currentTotal == nil ? "Feed total " : "Current total ") + (currentTotal ?? impact.totalAfterPlay).formatted(.number.precision(.fractionLength(2))))
                         .font(.headline).monospacedDigit()
                     if owner?.starter != false {
                         Text(signedPoints(impact.points)).font(.subheadline.bold()).monospacedDigit()
