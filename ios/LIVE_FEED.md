@@ -1,6 +1,6 @@
 # Shared Live Feed
 
-Live Feed now reads the shared backend automatically every five seconds. The one-game chooser, Live test controls, and RapidAPI-key form were removed. Users do not need a Tank01 key. Existing device Keychain values are not used by the Live Feed tab.
+Live Feed now reads the shared backend automatically every second. The one-game chooser, Live test controls, and RapidAPI-key form were removed. Users do not need a Tank01 key. Existing device Keychain values are not used by the Live Feed tab.
 
 The simulator defaults to http://127.0.0.1:8787. Start the backend with:
 
@@ -25,3 +25,5 @@ For cloud hosting, see backend/README.md and render.yaml. Set the hosted HTTPS o
     /tmp/duo-play-checks ios/Tests/Fixtures/tank01-plays.json
 
 Keep simulator code signing enabled. The preserved diagnostic flag --keychain-self-check tests only a dummy Keychain item; the new feed no longer requires device provider credentials.
+
+The current comparison build defaults to one-second refreshes. Backend POLL_SECONDS can override the interval (minimum one second); the app follows refresh_seconds returned by the server. Provider publication delays and slow requests still limit update speed.
