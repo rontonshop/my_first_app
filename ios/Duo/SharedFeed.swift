@@ -33,6 +33,7 @@ struct SharedFeedPayload: Decodable {
     let games: [CachedFeedGame]
     let scoring: SharedLeagueContext?
     let collector: FeedCollectorStatus?
+    var refresh_seconds: Double? = nil
 }
 
 struct SharedFeedCard: Identifiable {
