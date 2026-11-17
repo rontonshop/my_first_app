@@ -146,6 +146,12 @@ struct LiveFeedView: View {
                 if updatedIDs.contains(card.id) { Text("UPDATED").font(.caption.bold()).foregroundStyle(.orange) }
             }
             Text("Latest game score").font(.caption2).foregroundStyle(.secondary)
+            if let situation = card.play.fieldSituation {
+                Label("Before play · " + situation, systemImage: "location.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.cyan)
+                    .accessibilityLabel("Down, distance, and field position before this play: " + situation)
+            }
             Divider()
             Text(card.play.description).font(.subheadline)
             ForEach(card.play.impacts.filter { payload?.scoring?.ownership[SharedFeedClient.ownershipKey($0, game: card.game, context: payload?.scoring)] != nil || abs($0.points) > 0.00001 }) { impact in
