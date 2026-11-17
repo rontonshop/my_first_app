@@ -1,6 +1,6 @@
 # Shared NFL feed service
 
-The collector discovers games centrally, polls active box scores every five seconds, and persists snapshots and play identities in SQLite. App requests read the cached feed; they never call Tank01. One hundred readers cost the same Tank01 request count as one reader.
+The collector discovers games centrally, polls active box scores every second, and persists snapshots and play identities in SQLite. App requests read the cached feed; they never call Tank01. One hundred readers cost the same Tank01 request count as one reader.
 
 ## Run locally
 
@@ -20,7 +20,7 @@ No credentials, databases, or request headers belong in GitHub. Server errors re
 ## Collection behavior
 
 - Schedule discovery every 60 seconds for today and yesterday in US Eastern time.
-- Poll in-progress games every five seconds, with up to eight parallel requests and no overlapping collection cycles.
+- Poll in-progress games every second, with up to eight parallel requests and no overlapping collection cycles.
 - Tank01 schedule status can lag. A scheduled game whose kickoff time has passed gets a box-score probe every 30 seconds until live; live box scores override stale Scheduled responses.
 - Stop after the final box score. Keep stored data on disk; finished-game feeds remain visible for 24 hours.
 - Failed requests back off; 429 pauses collection for a minute, and 401/403 for five minutes. Cached data remains readable.
@@ -28,7 +28,7 @@ No credentials, databases, or request headers belong in GitHub. Server errors re
 - Keep player ID/name indexes for 24 hours. Refresh league scoring, roster ownership, co-owners, and starters every minute. Exact ESPN ID matches are preferred. Exact normalized name + NFL team matches are used only if unambiguous.
 - The app calculates per-play points from the shared snapshots and shared league rules. It makes no direct Tank01 or Sleeper calls in the Live Feed tab. Starters show total + play change; bench players show only total. Other app tabs may use Sleeper separately.
 
-Each active game uses approximately 720 Tank01 requests per hour, plus up to 120 schedule requests per hour. Polls never overlap; slow responses may reduce the achieved refresh frequency. The backend continues collecting when apps are closed, while the service process is running.
+Each active game uses approximately 3,600 Tank01 requests per hour, plus up to 120 schedule requests per hour. Polls never overlap; slow responses may reduce the achieved refresh frequency. The backend continues collecting when apps are closed, while the service process is running.
 
 ## Read API
 
@@ -58,3 +58,5 @@ Official references:
     python3 -m unittest discover -s backend -v
 
 Checks use a fake provider and temporary SQLite databases. They verify shared reads do not consume Tank01 calls, active-only polling, stale schedule fallback, finals, lease ownership, retries, persistence, corrected/deleted play identities, and starter/bench/co-owner mapping.
+
+The current comparison build defaults to one-second refreshes. Backend POLL_SECONDS can override the interval (minimum one second); the app follows refresh_seconds returned by the server. Provider publication delays and slow requests still limit update speed.
