@@ -12,6 +12,8 @@ services:
         sync: false
       - key: FEED_DB_PATH
         value: /data/feed.sqlite
+      - key: POLL_SECONDS
+        value: "1"
       - key: BIND_HOST
         value: 0.0.0.0
     disk:
