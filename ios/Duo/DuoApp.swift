@@ -3,7 +3,15 @@ import SwiftUI
 @main
 struct DuoApp: App {
     var body: some Scene {
-        WindowGroup { ContentView() }
+        WindowGroup {
+            TabView {
+                LeagueView()
+                    .tabItem { Label("Sleeper", systemImage: "sportscourt") }
+                ContentView()
+                    .tabItem { Label("Buttons", systemImage: "circle.grid.2x1") }
+            }
+            .preferredColorScheme(.dark)
+        }
     }
 }
 
