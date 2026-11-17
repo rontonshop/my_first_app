@@ -38,6 +38,13 @@ struct PlayFeedChecks {
         precondition(before[1].impacts[0].totalAfterPlay == 1)
         precondition(after[0].impacts[0].totalAfterPlay == 4)
         precondition(after[1].impacts[0].totalAfterPlay == 3)
+        // Regression: actual Tank01 omission, 303 play yards vs 319 box-score yards.
+        let omittedCompletion = #"{"body":{"allPlayByPlay":[{"playerStats":{"p":{"Passing":{"passYds":"303","int":"1"},"Rushing":{"rushYds":"2"}}}}],"playerStats":{"p":{"Passing":{"passYds":"319","int":"1"},"Rushing":{"rushYds":"2"}}}}}"#
+        let complete = try Tank01Client.decode(Data(omittedCompletion.utf8))
+        let incompleteFeed = PlayFeed.events(snapshot: complete, scoring: rules)
+        precondition(abs(incompleteFeed[0].impacts[0].totalAfterPlay - 11.32) < 0.00001)
+        precondition(abs(PlayFeed.currentTotal(playerID: "p", snapshot: complete, scoring: rules)! - 11.96) < 0.00001)
+        precondition(PlayFeed.currentTotal(playerID: "missing", snapshot: complete, scoring: rules) == nil)
         let unchanged = PlayFeed.changes(previous: plays, current: plays)
         precondition(unchanged.new.isEmpty && unchanged.updated.isEmpty)
         let appended = PlayFeed.changes(previous: Array(plays.dropLast()), current: plays)
