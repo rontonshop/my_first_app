@@ -67,15 +67,15 @@ class SharedFeedChecks(unittest.TestCase):
         self.assertEqual(len(self.provider.box_calls), 2)
         self.assertFalse(self.store.feed(self.now)['games'][0]['active'])
 
-    def test_five_second_cadence_and_single_poll_for_any_number_of_readers(self):
+    def test_one_second_cadence_and_single_poll_for_any_number_of_readers(self):
         self.collector.tick()
         for _ in range(100):
             self.assertEqual(len(self.store.feed(self.now)['games']), 1)
         self.assertEqual(len(self.provider.box_calls), 1)
-        self.now += 4
+        self.now += 0.5
         self.collector.tick()
         self.assertEqual(len(self.provider.box_calls), 1)
-        self.now += 1
+        self.now += 0.5
         self.collector.tick()
         self.assertEqual(len(self.provider.box_calls), 2)
 
@@ -131,11 +131,11 @@ class SharedFeedChecks(unittest.TestCase):
         self.assertEqual(result['456']['owner_name'], 'Ron & Co-owner')
         self.assertNotIn('789', result)
 
-    def test_request_latency_does_not_turn_five_seconds_into_ten(self):
+    def test_request_latency_does_not_delay_next_poll_tick(self):
         self.store.discover(self.provider.games)
-        self.store.save('20261116_A@B', self.provider.body, self.now + 1, next_poll=self.now + 5)
-        self.assertEqual(self.store.candidates(self.now + 4), [])
-        self.assertEqual(self.store.candidates(self.now + 5), ['20261116_A@B'])
+        self.store.save('20261116_A@B', self.provider.body, self.now + 0.2, next_poll=self.now + 1)
+        self.assertEqual(self.store.candidates(self.now + 0.5), [])
+        self.assertEqual(self.store.candidates(self.now + 1), ['20261116_A@B'])
 
     def test_schedule_can_lag_live_boxscore_after_kickoff(self):
         self.provider.games[0]['gameStatusCode'] = '0'
