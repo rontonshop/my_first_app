@@ -79,7 +79,7 @@ enum PlayFeed {
             }
             return GamePlay(id: play["playID"]?.text ?? index, description: description,
                 clock: [play["playPeriod"]?.text, play["playClock"]?.text].compactMap { $0 }.joined(separator: " · "),
-                impacts: impacts.filter { abs($0.points) > 0.00001 }.sorted { $0.name < $1.name },
+                impacts: impacts.sorted { $0.name < $1.name },
                 incomplete: !noPlay && stats.isEmpty, raw: play)
         }
     }
