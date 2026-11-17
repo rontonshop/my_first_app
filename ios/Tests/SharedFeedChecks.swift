@@ -27,6 +27,19 @@ struct SharedFeedChecks {
         precondition(SharedFeedClient.validURL("https://example.com") != nil)
         precondition(SharedFeedClient.validURL("http://127.0.0.1:8787") != nil)
         precondition(SharedFeedClient.validURL("http://example.com") == nil)
+        var officialContext = context
+        officialContext.week = 10
+        officialContext.season = "2026"
+        officialContext.sleeper_points = ["14012": 12.34, "4431588": 0]
+        guard case .object(var officialBody) = snapshot.body else { fatalError("Expected fixture object") }
+        officialBody["gameWeek"] = .string("Week 10")
+        let weeklyGame = CachedFeedGame(id: "20261116_A@B", body: .object(officialBody), updated_at: 100, active: true, play_sequences: [:])
+        let passer = PlayImpact(id: "14012", name: "Andy Dalton", points: 0.28, totalAfterPlay: 0.28, explanation: "")
+        let receiver = PlayImpact(id: "4431588", name: "Ja'Tavion Sanders", points: 1.7, totalAfterPlay: 1.7, explanation: "")
+        precondition(SharedFeedClient.sleeperTotal(passer, game: weeklyGame, context: officialContext) == 12.34)
+        precondition(SharedFeedClient.sleeperTotal(receiver, game: weeklyGame, context: officialContext) == 0)
+        officialContext.week = 9
+        precondition(SharedFeedClient.sleeperTotal(passer, game: weeklyGame, context: officialContext) == nil)
         print("Passed: multi-game merge, unique event identity, ownership role/fallback, server URL validation.")
     }
 }
