@@ -1,41 +1,27 @@
-# Tank01 live feed testing
+# Shared Live Feed
 
-1. Run Duo in Xcode and open the Live Feed tab.
-2. Subscribe to Tank01 NFL on RapidAPI if necessary. In its playground, copy the X-RapidAPI-Key header value.
-3. Paste the key into the app's secure field and tap Save key on this device. Do not put the key in source code, GitHub, or chat. The app stores it in Keychain on that device.
-4. Choose a date and Find games for date, or paste a gameID from the playground (YYYYMMDD_AWAY@HOME).
-5. Tap Refresh once to verify access, then enable Refresh every 5 seconds.
+Live Feed now reads the shared backend automatically every five seconds. The one-game chooser, Live test controls, and RapidAPI-key form were removed. Users do not need a Tank01 key. Existing device Keychain values are not used by the Live Feed tab.
 
-The client sends X-RapidAPI-Key and X-RapidAPI-Host headers to Tank01's RapidAPI host. Box score requests use playByPlay=true and fantasyPoints=true. Game discovery uses getNFLGamesForDate.
+The simulator defaults to http://127.0.0.1:8787. Start the backend with:
 
-Only the selected game is polled, without overlapping requests. Leaving the tab or backgrounding the app pauses polling. Errors stop auto-refresh. Each poll replaces the previous snapshot, so corrected plays do not accumulate duplicates. The response inspector preserves provider fields when their detailed schema differs from the initial adapter.
+    python3 backend/server.py
 
-5-second polling is approximately 720 box-score requests per hour, plus manual refreshes and game discovery. Check your RapidAPI quota before enabling it. Polling does not guarantee Tank01 publishes new data every 5 seconds.
+For cloud hosting, see backend/README.md and render.yaml. Set the hosted HTTPS origin using the gear menu (Feed connection) or the app's FeedServerURL Info.plist value. Hosting is prepared but not deployed until an account is connected and the service is created.
 
-The Game activity section reads Tank01 allPlayByPlay entries, resolves player names from the response, and calculates per-play fantasy changes using PNW 2026 scoring loaded from Sleeper. Provider-calculated fantasyPoints totals are not used for attribution. Each refresh replaces the snapshot and marks new or updated rows; it never adds a refreshed play to a running total. Historical plays appear on the first refresh.
+## Feed display
 
-Supported scoring includes common passing, rushing, receiving, kicking, two-point, and supplied fumble stats. Provider omissions remain incomplete; D/ST team scoring and threshold bonuses are not included. Player names are resolved within Tank01; Sleeper ownership mapping is not yet connected to this tab.
+- One combined stream of all collected games, with the latest game/score above the event quarter/clock.
+- Latest score labels distinguish the current scoreboard from the historical play clock.
+- Names and point changes come from Tank01's allPlayByPlay.playerStats fields, using PNW 2026 league scoring loaded by the backend.
+- Player totals are recomputed chronologically from each full game snapshot. Repeated reads and corrected plays do not double-count points.
+- Current fantasy team + owner/co-owners appear when mapped. Starters show running game total plus the play delta (green gains/red losses). Bench players show only their running total. Unmapped players are labeled explicitly rather than assigned a guessed owner.
+- Backend sequence IDs merge games by when plays were first received. The app displays the 300 most recently received events.
+- Per-play omissions, D/ST team scoring, and threshold bonuses remain limitations.
 
-Verification without credentials:
+## Local validation
 
-    xcrun swiftc ios/Duo/Tank01Client.swift ios/Tests/Tank01ClientChecks.swift -o /tmp/duo-tank01-checks
-    /tmp/duo-tank01-checks
-
-The client checks above use synthetic schema fixtures. Per-play scoring is additionally checked against a small recorded public-game Tank01 response (CAR at WSH, 2024-10-20), stored without headers or credentials:
-
+    python3 -m unittest discover -s backend -v
     xcrun swiftc ios/Duo/Tank01Client.swift ios/Duo/PlayFeed.swift ios/Tests/PlayFeedChecks.swift -o /tmp/duo-play-checks
     /tmp/duo-play-checks ios/Tests/Fixtures/tank01-plays.json
 
-Live polling still requires an API key entered in the app.
-
-## Simulator Keychain builds
-
-Keep code signing enabled. Simulator.entitlements supplies a simulator-only app identity and Keychain access group; physical-device builds use Xcode's normal development signing.
-
-    xcodebuild -project ios/Duo.xcodeproj -scheme Duo -configuration Debug -sdk iphonesimulator -derivedDataPath .build CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- build
-
-Do not use CODE_SIGNING_ALLOWED=NO: that bypasses the simulator entitlement setup and causes Keychain error -34018.
-
-For a Debug simulator build, launch with --keychain-self-check to verify dummy-item creation, update, readback, and deletion. This uses a separate temporary account and never touches the real API key or calls Tank01.
-
-Game Center shows the latest game score and status. Each play header repeats the latest score above its historical quarter and clock, explicitly labeled Latest score; this is not a reconstructed historical score.
+Keep simulator code signing enabled. The preserved diagnostic flag --keychain-self-check tests only a dummy Keychain item; the new feed no longer requires device provider credentials.
