@@ -75,23 +75,47 @@ enum TankKeychain {
         return String(data: data, encoding: .utf8) ?? ""
     }
     static func save(_ key: String) throws {
+        try save(key, matching: query)
+    }
+    private static func save(_ key: String, matching query: [String: Any]) throws {
         let data = Data(key.utf8)
         let status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
         if status == errSecItemNotFound {
             var request = query
             request[kSecValueData as String] = data
             request[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-            guard SecItemAdd(request as CFDictionary, nil) == errSecSuccess else { throw TankError.keychain }
-        } else if status != errSecSuccess { throw TankError.keychain }
+            let addStatus = SecItemAdd(request as CFDictionary, nil)
+            guard addStatus == errSecSuccess else { throw TankError.keychain(addStatus) }
+        } else if status != errSecSuccess { throw TankError.keychain(status) }
     }
     static func delete() throws {
         let status = SecItemDelete(query as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else { throw TankError.keychain }
+        guard status == errSecSuccess || status == errSecItemNotFound else { throw TankError.keychain(status) }
     }
+    #if DEBUG
+    static func selfCheck() throws {
+        var testQuery = query
+        testQuery[kSecAttrAccount as String] = "self-check-" + UUID().uuidString
+        defer { SecItemDelete(testQuery as CFDictionary) }
+        try save("dummy-first", matching: testQuery)
+        try save("dummy-updated", matching: testQuery)
+        var readQuery = testQuery
+        readQuery[kSecReturnData as String] = true
+        readQuery[kSecMatchLimit as String] = kSecMatchLimitOne
+        var result: CFTypeRef?
+        let status = SecItemCopyMatching(readQuery as CFDictionary, &result)
+        guard status == errSecSuccess else { throw TankError.keychain(status) }
+        guard let data = result as? Data, String(data: data, encoding: .utf8) == "dummy-updated" else {
+            throw TankError.malformed
+        }
+        let deletion = SecItemDelete(testQuery as CFDictionary)
+        guard deletion == errSecSuccess else { throw TankError.keychain(deletion) }
+    }
+    #endif
 }
 
 enum TankError: LocalizedError {
-    case http(Int), provider, malformed, keychain
+    case http(Int), provider, malformed, keychain(OSStatus)
     var errorDescription: String? {
         switch self {
         case .http(401): return "API key rejected. Check the saved RapidAPI key."
@@ -100,7 +124,12 @@ enum TankError: LocalizedError {
         case .http(let code): return "Tank01 request failed (HTTP \(code))."
         case .provider: return "Tank01 returned an API error. Check the game ID and your subscription in its playground."
         case .malformed: return "Tank01 returned an unexpected response."
-        case .keychain: return "Couldn’t update the API key in this device’s Keychain."
+        case .keychain(let status):
+            if status == errSecMissingEntitlement {
+                return "Keychain access is missing from this app build (\(status)). Rebuild with code signing enabled."
+            }
+            let detail = SecCopyErrorMessageString(status, nil) as String? ?? "Unknown error"
+            return "Couldn’t update the API key in Keychain (\(status)): \(detail)"
         }
     }
 }
