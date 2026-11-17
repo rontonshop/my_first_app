@@ -9,7 +9,7 @@ from urllib.error import HTTPError
 from urllib.request import urlopen
 from http.server import ThreadingHTTPServer
 
-from feed_service import Collector, ProviderError, Store, ownership_map, name_key
+from feed_service import Collector, ProviderError, Store, ownership_map, name_key, sleeper_point_map
 from server import handler_for
 
 
@@ -31,8 +31,11 @@ class FakeProvider:
         return {'players': {'123': 's1'}, 'positions': {'123': 'RB'}}
 
     def scoring(self, catalog):
-        return {'league_name': 'Test League', 'settings': {'rec': 1}, 'ownership': {},
+        return {'league_name': 'Test League', 'settings': {'rec': 1}, 'ownership': {}, 'week': 10, 'season': '2026',
                 'known_player_ids': list(catalog['players']), 'positions': catalog['positions']}
+
+    def matchup_points(self, week):
+        return [{'players_points': {'s1': 12.34}}]
 
     def fetch(self, endpoint, **params):
         self.calls += 1
@@ -167,6 +170,31 @@ class SharedFeedChecks(unittest.TestCase):
     def test_name_fallback_normalizes_suffix_and_team_aliases(self):
         self.assertEqual(name_key('Brian Robinson Jr.', 'WAS'), name_key('Brian Robinson', 'WSH'))
         self.assertIsNone(name_key('Unknown Player', None))
+
+    def test_sleeper_totals_preserve_zero_negative_bench_and_missing_values(self):
+        scores = sleeper_point_map([{'players_points': {'s1': 0, 's2': -1.5, 'bench': 12.34},
+                                    'starters': ['s1', 'other'], 'starters_points': [99, 2.2]}],
+                                   {'p1': 's1', 'p2': 's2', 'p3': 'bench', 'p4': 'missing', 'p5': 'other'})
+        self.assertEqual(scores, {'p1': 0, 'p2': -1.5, 'p3': 12.34, 'p5': 2.2})
+
+    def test_shared_feed_uses_sleeper_player_score_without_recalculation(self):
+        self.collector.tick()
+        context = self.store.feed(self.now)['scoring']
+        self.assertEqual(context['sleeper_points']['123'], 12.34)
+        self.assertEqual(context['week'], 10)
+        self.assertEqual(context['season'], '2026')
+        self.assertIsNotNone(context['scores_updated_at'])
+
+    def test_sleeper_scores_still_refresh_during_tank01_pause(self):
+        self.collector.tick()
+        self.provider.fail = 429
+        self.now += 5
+        self.collector.tick()
+        self.now += 5
+        calls = len(self.provider.box_calls)
+        self.collector.tick()
+        self.assertEqual(len(self.provider.box_calls), calls)
+        self.assertEqual(self.store.feed(self.now)['scoring']['scores_updated_at'], self.now)
 
     def test_http_feed_reads_do_not_call_upstream(self):
         self.collector.tick()
