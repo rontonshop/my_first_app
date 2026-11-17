@@ -12,6 +12,7 @@ struct SharedLeagueContext: Decodable {
     let ownership: [String: FeedOwner]
     let known_player_ids: [String]
     let updated_at: Double?
+    var positions: [String: String]? = nil
 }
 
 struct CachedFeedGame: Decodable, Identifiable {
