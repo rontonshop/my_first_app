@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 
 HOST = 'tank01-nfl-live-in-game-real-time-statistics-nfl.p.rapidapi.com'
 LEAGUE_ID = '1399979975465041920'
-POLL_SECONDS = 5
+POLL_SECONDS = max(1.0, float(os.environ.get('POLL_SECONDS', '1')))
 DISCOVERY_SECONDS = 60
 
 
