@@ -15,6 +15,11 @@ struct GamePlay: Identifiable {
     let impacts: [PlayImpact]
     let incomplete: Bool
     let raw: FeedJSON
+    var fieldSituation: String? {
+        guard let value = raw["downAndDistance"]?.text?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty else { return nil }
+        return value
+    }
 }
 
 enum PlayFeed {
