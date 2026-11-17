@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: duo-shared-feed
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: off
+    envVars:
+      - key: TANK01_API_KEY
+        sync: false
+      - key: FEED_DB_PATH
+        value: /data/feed.sqlite
+      - key: BIND_HOST
+        value: 0.0.0.0
+    disk:
+      name: feed-data
+      mountPath: /data
+      sizeGB: 1
