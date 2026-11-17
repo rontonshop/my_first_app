@@ -13,6 +13,10 @@ struct SharedLeagueContext: Decodable {
     let known_player_ids: [String]
     let updated_at: Double?
     var positions: [String: String]? = nil
+    var sleeper_points: [String: Double]? = nil
+    var week: Int? = nil
+    var season: String? = nil
+    var scores_updated_at: Double? = nil
 }
 
 struct CachedFeedGame: Decodable, Identifiable {
@@ -78,6 +82,16 @@ enum SharedFeedClient {
         let key = "name:" + normalized + "|" + team
         if context?.known_player_ids.contains(key) == true { return key }
         return impact.id
+    }
+    static func sleeperTotal(_ impact: PlayImpact, game: CachedFeedGame, context: SharedLeagueContext?) -> Double? {
+        guard let context, let week = context.week, let season = context.season,
+              let rawWeek = game.body["gameWeek"]?.text,
+              Int(rawWeek.filter(\.isNumber)) == week,
+              let year = Int(game.id.prefix(4)),
+              let month = Int(game.id.dropFirst(4).prefix(2)),
+              String(month <= 2 ? year - 1 : year) == season else { return nil }
+        let key = ownershipKey(impact, game: game, context: context)
+        return context.sleeper_points?[key] ?? context.sleeper_points?[impact.id]
     }
     static func cards(_ payload: SharedFeedPayload) -> [SharedFeedCard] {
         payload.games.flatMap { game in
