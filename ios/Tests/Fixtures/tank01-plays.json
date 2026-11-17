@@ -1,0 +1,176 @@
+{
+  "statusCode": 200,
+  "body": {
+    "gameID": "20241020_CAR@WSH",
+    "allPlayByPlay": [
+      {
+        "play": "A.Dalton pass short right to J.Sanders to CAR 21 for 7 yards (B.St-Juste).",
+        "playPeriod": "Q1",
+        "playClock": "14:55",
+        "playerStats": {
+          "14012": {
+            "Passing": {
+              "passAttempts": "1",
+              "passYds": "7",
+              "passCompletions": "1"
+            }
+          },
+          "4431588": {
+            "Receiving": {
+              "receptions": "1",
+              "targets": "1",
+              "recYds": "7"
+            }
+          }
+        },
+        "downAndDistance": "1st & 10 at CAR 14",
+        "teamID": "5"
+      },
+      {
+        "play": "C.Hubbard left end to CAR 25 for 4 yards (M.Sainristil, Q.Martin).",
+        "playPeriod": "Q1",
+        "playClock": "14:24",
+        "playerStats": {
+          "4241416": {
+            "Rushing": {
+              "rushYds": "4",
+              "carries": "1"
+            }
+          }
+        },
+        "downAndDistance": "2nd & 3 at CAR 21",
+        "teamID": "5"
+      },
+      {
+        "play": "A.Dalton pass short right intended for M.Sanders INTERCEPTED by D.Fowler at WAS 33. D.Fowler for 67 yards, TOUCHDOWN.A.Seibert extra point is GOOD, Center-T.Ott, Holder-T.Way.",
+        "playClock": "11:14",
+        "playerStats": {
+          "14012": {
+            "Passing": {
+              "passAttempts": "1",
+              "int": "1"
+            }
+          },
+          "2980100": {
+            "Defense": {
+              "defTD": "1",
+              "defensiveInterceptions": "1"
+            }
+          },
+          "4045163": {
+            "Receiving": {
+              "targets": "1"
+            }
+          }
+        },
+        "teamID": "5",
+        "playPeriod": "Q1",
+        "downAndDistance": "3rd & 9 at WSH 25",
+        "teamStats": {
+          "home": {
+            "defensiveInterceptions": "1"
+          }
+        }
+      },
+      {
+        "play": "PENALTY on WAS-T.Biadasz, False Start, 5 yards, enforced at CAR 39 - No Play.",
+        "playPeriod": "Q1",
+        "playClock": "8:19",
+        "playerStats": {},
+        "downAndDistance": "2nd & 5 at CAR 39",
+        "teamID": "32"
+      },
+      {
+        "play": "A.Seibert 49 yard field goal is GOOD, Center-T.Ott, Holder-T.Way.",
+        "playPeriod": "Q2",
+        "playClock": "5:39",
+        "playerStats": {
+          "3821683": {
+            "Kicking": {
+              "fgMade": "1",
+              "fgAttempts": "1",
+              "fgYds": "49"
+            }
+          }
+        },
+        "downAndDistance": "4th & 11 at CAR 31",
+        "teamID": "32"
+      },
+      {
+        "play": "M.Mariota pass short right to Z.Ertz for 12 yards, TOUCHDOWN.A.Seibert extra point is GOOD, Center-T.Ott, Holder-T.Way.",
+        "playPeriod": "Q2",
+        "playClock": "0:10",
+        "playerStats": {
+          "15835": {
+            "Receiving": {
+              "receptions": "1",
+              "targets": "1",
+              "recTD": "1",
+              "recYds": "12"
+            }
+          },
+          "3821683": {
+            "Kicking": {
+              "xpMade": "1",
+              "xpAttempts": "1"
+            }
+          },
+          "2576980": {
+            "Passing": {
+              "passAttempts": "1",
+              "passTD": "1",
+              "passYds": "12",
+              "passCompletions": "1"
+            }
+          }
+        },
+        "downAndDistance": "1st & 10 at CAR 12",
+        "teamID": "32"
+      },
+      {
+        "play": "J.Daniels up the middle to CAR 8 for -3 yards (T.Incoom).",
+        "playPeriod": "Q1",
+        "playClock": "4:37",
+        "playerStats": {
+          "4426348": {
+            "Rushing": {
+              "rushYds": "-3",
+              "carries": "1"
+            }
+          }
+        },
+        "downAndDistance": "2nd & Goal at CAR 5",
+        "teamID": "32"
+      }
+    ],
+    "playerStats": {
+      "14012": {
+        "longName": "Andy Dalton"
+      },
+      "2980100": {
+        "longName": "Dante Fowler Jr."
+      },
+      "2576980": {
+        "longName": "Marcus Mariota"
+      },
+      "4241416": {
+        "longName": "Chuba Hubbard"
+      },
+      "15835": {
+        "longName": "Zach Ertz"
+      },
+      "4426348": {
+        "longName": "Jayden Daniels"
+      },
+      "4045163": {
+        "longName": "Miles Sanders"
+      },
+      "4431588": {
+        "longName": "Ja'Tavion Sanders"
+      },
+      "3821683": {
+        "longName": "Austin Seibert"
+      }
+    }
+  }
+}
