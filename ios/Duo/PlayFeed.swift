@@ -4,6 +4,7 @@ struct PlayImpact: Identifiable {
     let id: String
     let name: String
     let points: Double
+    let totalAfterPlay: Double
     let explanation: String
 }
 
@@ -18,7 +19,10 @@ struct GamePlay: Identifiable {
 
 enum PlayFeed {
     static func events(snapshot: FeedSnapshot, scoring: [String: Double]) -> [GamePlay] {
-        snapshot.plays.map { index, play in
+        // Recompute from the full chronological snapshot so refreshes and revisions
+        // cannot double-count points or leave later running totals stale.
+        var totals: [String: Double] = [:]
+        return snapshot.plays.map { index, play in
             let description = play["play"]?.text ?? play["playDescription"]?.text ?? play["description"]?.text ?? "Game update"
             let noPlay = description.localizedCaseInsensitiveContains("no play")
             let stats = play["playerStats"]?.records ?? []
@@ -69,7 +73,9 @@ enum PlayFeed {
                     }
                 }
                 let name = snapshot.body["playerStats"]?[playerID]?["longName"]?.text ?? "Player \(playerID)"
-                return PlayImpact(id: playerID, name: name, points: points, explanation: terms.joined(separator: " · "))
+                totals[playerID, default: 0] += points
+                return PlayImpact(id: playerID, name: name, points: points,
+                    totalAfterPlay: totals[playerID] ?? 0, explanation: terms.joined(separator: " · "))
             }
             return GamePlay(id: play["playID"]?.text ?? index, description: description,
                 clock: [play["playPeriod"]?.text, play["playClock"]?.text].compactMap { $0 }.joined(separator: " · "),
