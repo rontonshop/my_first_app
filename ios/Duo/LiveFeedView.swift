@@ -60,12 +60,12 @@ struct LiveFeedView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Section("Live test") {
-                    Toggle("Refresh every 10 seconds", isOn: $polling)
+                    Toggle("Refresh every 5 seconds", isOn: $polling)
                         .disabled(!canFetch || (busy && !polling))
                     Button("Refresh once") { Task { await refresh() } }
                         .disabled(!canFetch || busy || polling)
                     if busy { ProgressView("Requesting Tank01…") }
-                    Text("One selected game · about 360 requests/hour. Refresh runs only while this tab is visible and the app is active. Any request error stops auto-refresh.")
+                    Text("One selected game · about 720 requests/hour. Refresh runs only while this tab is visible and the app is active. Any request error stops auto-refresh.")
                         .font(.caption).foregroundStyle(.secondary)
                     Text("\(requests) requests this session").font(.caption).foregroundStyle(.secondary)
                     if let updatedAt {
@@ -75,14 +75,24 @@ struct LiveFeedView: View {
                     if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
                 }
                 if let snapshot {
-                    Section("Game") {
-                        Text(gameID).font(.headline)
-                        Text(snapshot.status).foregroundStyle(.secondary)
-                        if let away = snapshot.body["awayPts"]?.text, let home = snapshot.body["homePts"]?.text {
-                            Text("\(snapshot.body["away"]?.text ?? "Away") \(away)  –  \(snapshot.body["home"]?.text ?? "Home") \(home)")
-                                .font(.title2.bold()).monospacedDigit()
-                        }
-                    }
+                    Section {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Label("GAME CENTER", systemImage: "sportscourt.fill")
+                                .font(.caption.weight(.heavy)).tracking(2).foregroundStyle(.cyan)
+                            HStack(alignment: .center) {
+                                scoreboardTeam(snapshot.body["away"]?.text ?? "Away", points: snapshot.body["awayPts"]?.text)
+                                Text("AT").font(.caption.bold()).foregroundStyle(.secondary)
+                                scoreboardTeam(snapshot.body["home"]?.text ?? "Home", points: snapshot.body["homePts"]?.text)
+                            }
+                            HStack {
+                                Text(snapshot.status).font(.subheadline.weight(.semibold))
+                                Spacer()
+                                Text([snapshot.body["currentPeriod"]?.text, snapshot.body["gameClock"]?.text]
+                                    .compactMap { $0 }.joined(separator: " · "))
+                                    .font(.subheadline.monospacedDigit())
+                            }.foregroundStyle(.secondary)
+                        }.padding(.vertical, 12)
+                    }.listRowBackground(Color.blue.opacity(0.12))
                     Section("Game activity") {
                         Text("PNW 2026 scoring · Newest plays first")
                             .font(.caption).foregroundStyle(.secondary)
@@ -92,12 +102,21 @@ struct LiveFeedView: View {
                         }
                         ForEach(events.reversed()) { play in
                             VStack(alignment: .leading, spacing: 10) {
-                                HStack {
-                                    Text(play.clock).font(.caption).foregroundStyle(.secondary)
-                                    Spacer()
-                                    if newPlays.contains(play.id) { Text("NEW").font(.caption.bold()).foregroundStyle(.blue) }
-                                    if updatedPlays.contains(play.id) { Text("UPDATED").font(.caption.bold()).foregroundStyle(.orange) }
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text(gameHeader(snapshot))
+                                        .font(.headline.weight(.bold))
+                                        .foregroundStyle(.primary)
+                                    HStack(spacing: 8) {
+                                        Text(play.clock.isEmpty ? "Game update" : play.clock + " remaining")
+                                            .font(.caption.weight(.semibold)).monospacedDigit()
+                                            .padding(.horizontal, 10).padding(.vertical, 5)
+                                            .background(Color.blue.opacity(0.16), in: Capsule())
+                                        Spacer(minLength: 0)
+                                        if newPlays.contains(play.id) { Text("NEW").font(.caption.bold()).foregroundStyle(.blue) }
+                                        if updatedPlays.contains(play.id) { Text("UPDATED").font(.caption.bold()).foregroundStyle(.orange) }
+                                    }
                                 }
+                                Divider()
                                 Text(play.description).font(.subheadline)
                                 ForEach(play.impacts) { impact in
                                     VStack(alignment: .leading, spacing: 3) {
@@ -141,11 +160,24 @@ struct LiveFeedView: View {
                     let started = Date()
                     await refresh()
                     guard !Task.isCancelled && shouldPoll else { break }
-                    let remaining = max(0, 10 - Date().timeIntervalSince(started))
+                    let remaining = max(0, 5 - Date().timeIntervalSince(started))
                     do { try await Task.sleep(for: .seconds(remaining)) } catch { break }
                 }
             }
         }
+    }
+    private func scoreboardTeam(_ name: String, points: String?) -> some View {
+        VStack(spacing: 6) {
+            Text(name).font(.title3.weight(.heavy))
+            Text(points ?? "—").font(.system(size: 40, weight: .bold, design: .rounded)).monospacedDigit()
+        }.frame(maxWidth: .infinity)
+    }
+    private func gameHeader(_ snapshot: FeedSnapshot) -> String {
+        let away = snapshot.body["away"]?.text ?? "Away"
+        let home = snapshot.body["home"]?.text ?? "Home"
+        let awayPoints = snapshot.body["awayPts"]?.text ?? "—"
+        let homePoints = snapshot.body["homePts"]?.text ?? "—"
+        return "\(away) \(awayPoints)  –  \(home) \(homePoints) · Latest score"
     }
     private func signedPoints(_ points: Double) -> String {
         (points >= 0 ? "+" : "") + points.formatted(.number.precision(.fractionLength(2))) + " pts"
