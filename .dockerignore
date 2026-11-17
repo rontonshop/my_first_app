@@ -1,0 +1,7 @@
+.git
+.build
+ios
+.env
+.env.*
+**/__pycache__
+**/*.sqlite*
